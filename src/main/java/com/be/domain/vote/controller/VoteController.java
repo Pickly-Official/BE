@@ -4,6 +4,7 @@ import com.be.domain.photo.dto.response.PhotoUploadResponse;
 import com.be.domain.photo.service.PhotoService;
 import com.be.domain.vote.dto.request.VoteCreateRequest;
 import com.be.domain.vote.dto.response.VoteCreateResponse;
+import com.be.domain.vote.dto.response.VoteResultResponse;
 import com.be.domain.vote.service.VoteService;
 import com.be.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -35,5 +36,10 @@ public class VoteController {
             @RequestPart("files") List<MultipartFile> files
     ) {
         return ResponseEntity.ok(ApiResponse.ok(photoService.uploadPhotos(voteId, files)));
+    }
+
+    @GetMapping("/{voteId}/result")
+    public ResponseEntity<ApiResponse<VoteResultResponse>> getVoteResult(@PathVariable Long voteId) {
+        return ResponseEntity.ok(ApiResponse.ok(voteService.getVoteResult(voteId)));
     }
 }

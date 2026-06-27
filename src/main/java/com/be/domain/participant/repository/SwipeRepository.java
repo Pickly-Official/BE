@@ -10,9 +10,7 @@ import java.util.List;
 
 public interface SwipeRepository extends JpaRepository<Swipe, Long> {
 
-    long countByPhotoIdAndChoice(Long photoId, SwipeChoice choice);
-
-    @Query(value = """
+   @Query(value = """
             SELECT ps.id AS spotId, ps.name AS name,
                    CAST(ROUND(SUM(CASE WHEN s.choice = 'LIKE' THEN 1 ELSE 0 END) * 100.0 / COUNT(s.id)) AS UNSIGNED) AS recommendRatio
             FROM swipes s
@@ -23,4 +21,5 @@ public interface SwipeRepository extends JpaRepository<Swipe, Long> {
             LIMIT 3
             """, nativeQuery = true)
     List<PopularSpotProjection> findTop3PopularSpots();
+
 }
