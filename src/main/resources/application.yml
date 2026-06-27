@@ -1,8 +1,38 @@
 spring:
+  # spring.security.oauth2 비활성화: 소셜 로그인 미사용 상태
+  # 활성화 시 아래 주석 해제 + SecurityConfig에 oauth2Login() 블록 복구
+  # security:
+  #   oauth2:
+  #     client:
+  #       registration:
+  #         kakao:
+  #           client-id: ${KAKAO_CLIENT_ID}
+  #           client-secret: ${KAKAO_CLIENT_SECRET:}
+  #           redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
+  #           authorization-grant-type: authorization_code
+  #           client-authentication-method: client_secret_post
+  #           scope:
+  #             - profile_nickname
+  #             - account_email
+  #           client-name: Kakao
+  #         google:
+  #           client-id: ${GOOGLE_CLIENT_ID}
+  #           client-secret: ${GOOGLE_CLIENT_SECRET}
+  #           redirect-uri: ${GOOGLE_REDIRECT_URL}
+  #           authorization-grant-type: authorization_code
+  #           scope:
+  #             - email
+  #             - profile
+  #       provider:
+  #         kakao:
+  #           authorization-uri: https://kauth.kakao.com/oauth/authorize
+  #           token-uri: https://kauth.kakao.com/oauth/token
+  #           user-info-uri: https://kapi.kakao.com/v2/user/me
+  #           user-name-attribute: id
   datasource:
-    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pickly}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
+    url: jdbc:mariadb://localhost:3306/pickly?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1111
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
@@ -41,6 +71,9 @@ oauth:
   google:
     userinfo-url: https://www.googleapis.com/oauth2/v3/userinfo
 
+frontend:
+  url: ${FRONTEND_URL:http://localhost:3000}
+
 openai:
   api-key: ${OPENAI_API_KEY:}
   api-url: https://api.openai.com/v1/chat/completions
@@ -50,3 +83,9 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+
+logging:
+  level:
+    com.be: DEBUG
+    org.springframework.security: DEBUG
