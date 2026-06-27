@@ -3,6 +3,7 @@ package com.be.domain.vote.controller;
 import com.be.domain.photo.dto.response.PhotoUploadResponse;
 import com.be.domain.photo.service.PhotoService;
 import com.be.domain.vote.dto.request.VoteCreateRequest;
+import com.be.domain.vote.dto.response.MyVoteListResponse;
 import com.be.domain.vote.dto.response.VoteAnalyzeResponse;
 import com.be.domain.vote.dto.response.VoteCreateResponse;
 import com.be.domain.vote.dto.response.VoteResultResponse;
@@ -31,6 +32,12 @@ public class VoteController {
             @AuthenticationPrincipal Long userId,
             @RequestBody @Valid VoteCreateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(voteService.createVote(userId, request)));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<MyVoteListResponse>> getMyVotes(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(voteService.getMyVotes(userId)));
     }
 
     @PostMapping(value = "/{voteId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
