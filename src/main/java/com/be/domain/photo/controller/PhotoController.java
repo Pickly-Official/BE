@@ -20,7 +20,7 @@ public class PhotoController {
 
     @PostMapping(value = "/locations", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PhotoLocationAnalysisResponse>> analyzeLocations(
-            @RequestPart("files") List<MultipartFile> files
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(ApiResponse.ok(photoService.analyzeLocations(files)));
     }
