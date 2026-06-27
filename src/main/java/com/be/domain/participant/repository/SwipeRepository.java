@@ -1,6 +1,7 @@
 package com.be.domain.participant.repository;
 
 import com.be.domain.participant.entity.Swipe;
+import com.be.domain.participant.entity.SwipeChoice;
 import com.be.domain.photo.repository.PopularSpotProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -8,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface SwipeRepository extends JpaRepository<Swipe, Long> {
+
+    long countByPhotoIdAndChoice(Long photoId, SwipeChoice choice);
 
     @Query(value = """
             SELECT ps.id AS spotId, ps.name AS name,
