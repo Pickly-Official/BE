@@ -29,6 +29,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+//                                .oidcUserService(customOidcUserService) // 구글
+                                .userService(customOAuth2UserService) // 카카오, 네이버
+                        )
+                        .successHandler(oAuth2SuccessHandler) // 온보딩 분기 등 커스텀 성공 핸들러
+                        .failureHandler(oAuth2FailureHandler)
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
