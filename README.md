@@ -2,7 +2,9 @@ Commit Convention
 [type] #Issue Number 제목(작업 내용) 본문 (한줄로 설명 가능한 경우 본문은 생략)
 
 Feat : 새로운 기능 구현
+
 Mod : 코드 및 내부 파일 수정
+
 Add : feat 이외의 부수적인 코드, 파일, 라이브러리 추가
 Delete : 불필요한 코드나 파일 삭제
 Fix : 버그 및 오류 해결
