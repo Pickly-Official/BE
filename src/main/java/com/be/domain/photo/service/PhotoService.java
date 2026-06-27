@@ -1,6 +1,7 @@
 package com.be.domain.photo.service;
 
 import com.be.domain.photo.dto.response.PhotoUploadResponse;
+import com.be.domain.vote.dto.response.VotePhotosResponse;
 import com.be.domain.photo.entity.Photo;
 import com.be.domain.photo.entity.PhotoSpot;
 import com.be.domain.photo.repository.PhotoRepository;
@@ -101,6 +102,19 @@ public class PhotoService {
                 .toList();
 
         return new PhotoUploadResponse(photoInfos);
+    }
+
+    public VotePhotosResponse getVotePhotos(Long voteId) {
+        Vote vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new CustomException(ErrorCode.VOTE_NOT_FOUND));
+
+        List<VotePhotosResponse.PhotoInfo> photoInfos = photoRepository
+                .findByVoteIdOrderBySequenceAsc(voteId).stream()
+                .map(p -> new VotePhotosResponse.PhotoInfo(
+                        p.getId(), p.getImageUrl(), p.getSequence()))
+                .toList();
+
+        return new VotePhotosResponse(vote.getId(), vote.getTitle(), photoInfos);
     }
 
     private String uploadToS3(Long voteId, int sequence, String uuid) {

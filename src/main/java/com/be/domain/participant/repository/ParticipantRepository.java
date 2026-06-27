@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface ParticipantRepository extends JpaRepository<Participant, Long> {
     long countByVoteId(Long voteId);
+
+    Optional<Participant> findByVoteIdAndVoterUuid(Long voteId, String voterUuid);
 }

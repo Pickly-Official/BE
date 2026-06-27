@@ -19,9 +19,6 @@ public class HomeController {
 
     private final HomeService homeService;
 
-    // TODO: JWT 연동 후 토큰에서 userId 추출로 교체
-    private static final Long TEMP_USER_ID = 1L;
-
     @Operation(summary = "홈 통계 조회", description = "누적 참여자 수와 오늘 생성된 투표 수를 반환합니다.")
     @GetMapping("/stats")
     public ApiResponse<HomeStatsResponse> getStats() {

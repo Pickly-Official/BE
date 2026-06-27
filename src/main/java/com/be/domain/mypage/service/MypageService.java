@@ -21,6 +21,9 @@ public class MypageService {
     private final SwipeRepository swipeRepository;
 
     public MypageStatsResponse getStats(Long userId) {
+        if (userId == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
