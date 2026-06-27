@@ -8,6 +8,7 @@ public class SpaController {
 
     @GetMapping(value = {
             "/",
+            "/oauth2/callback",
             "/home",
             "/create",
             "/share/{id}",
