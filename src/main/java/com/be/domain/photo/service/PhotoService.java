@@ -22,7 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -37,11 +41,18 @@ public class PhotoService {
     private final PhotoRepository photoRepository;
     private final VoteRepository voteRepository;
     private final PhotoSpotService photoSpotService;
+    private final S3Client s3Client;
 
     private final RestClient restClient = RestClient.create();
 
     @Value("${kakao.rest-api-key}")
     private String kakaoApiKey;
+
+    @Value("${aws.s3.bucket}")
+    private String s3Bucket;
+
+    @Value("${aws.s3.region}")
+    private String s3Region;
 
     @Transactional
     public PhotoUploadResponse uploadPhotos(Long voteId, List<MultipartFile> files) {
@@ -63,18 +74,20 @@ public class PhotoService {
         List<Photo> photos = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
             int sequence = i + 1;
-            String imageUrl = uploadToS3(voteId, sequence, UUID.randomUUID().toString());
-            GpsData gps = parseGpsFromExif(files.get(i));
+            MultipartFile file = files.get(i);
+            GpsData gps = parseGpsFromExif(file);
+
+            if (vote.getUseLocation() && gps == null) {
+                throw new CustomException(ErrorCode.NO_EXIF_GPS);
+            }
+
+            String imageUrl = uploadToS3(file, voteId, sequence, UUID.randomUUID().toString());
 
             Photo photo = (gps != null)
                     ? Photo.ofWithLocation(vote, imageUrl, sequence,
                             BigDecimal.valueOf(gps.latitude()), BigDecimal.valueOf(gps.longitude()), gps.takenAt())
                     : Photo.of(vote, imageUrl, sequence);
             photos.add(photo);
-        }
-
-        if (vote.getUseLocation() && photos.stream().anyMatch(p -> p.getLatitude() == null)) {
-            throw new CustomException(ErrorCode.NO_EXIF_GPS);
         }
 
         Map<Photo, String> spotNameByPhoto = new HashMap<>();
@@ -117,9 +130,42 @@ public class PhotoService {
         return new VotePhotosResponse(vote.getId(), vote.getTitle(), photoInfos);
     }
 
-    private String uploadToS3(Long voteId, int sequence, String uuid) {
-        // TODO: S3 연동 후 실제 업로드로 교체
-        return "https://mock-s3.com/votes/" + voteId + "/" + sequence + "_" + uuid + ".jpg";
+    private String uploadToS3(MultipartFile file, Long voteId, int sequence, String uuid) {
+        String key = "votes/%d/%d_%s%s".formatted(voteId, sequence, uuid, resolveExtension(file));
+        try {
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(s3Bucket)
+                    .key(key)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
+
+            s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            return "https://%s.s3.%s.amazonaws.com/%s".formatted(s3Bucket, s3Region, key);
+        } catch (IOException | RuntimeException e) {
+            log.error("[S3] 업로드 실패: voteId={}, sequence={}, filename={}",
+                    voteId, sequence, file.getOriginalFilename(), e);
+            throw new CustomException(ErrorCode.S3_UPLOAD_FAILED);
+        }
+    }
+
+    private String resolveExtension(MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename != null) {
+            int dotIndex = filename.lastIndexOf('.');
+            if (dotIndex >= 0 && dotIndex < filename.length() - 1) {
+                String extension = filename.substring(dotIndex).toLowerCase(Locale.ROOT);
+                if (extension.matches("\\.[a-z0-9]{1,10}")) {
+                    return extension;
+                }
+            }
+        }
+
+        String contentType = file.getContentType();
+        if ("image/png".equals(contentType)) return ".png";
+        if ("image/webp".equals(contentType)) return ".webp";
+        if ("image/gif".equals(contentType)) return ".gif";
+        return ".jpg";
     }
 
     private GpsData parseGpsFromExif(MultipartFile file) {

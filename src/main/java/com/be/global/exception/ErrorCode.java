@@ -28,6 +28,7 @@ public enum ErrorCode {
     INVALID_PHOTO_COUNT(HttpStatus.BAD_REQUEST, "P002", "사진은 2장 이상 10장 이하로 업로드해야 합니다."),
     NO_EXIF_GPS(HttpStatus.BAD_REQUEST, "P003", "위치정보가 없는 사진입니다."),
     INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "P004", "이미지 파일만 업로드할 수 있습니다."),
+    S3_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P005", "사진 업로드에 실패했습니다."),
 
     // Participant
     PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "PA001", "존재하지 않는 참여자입니다."),
