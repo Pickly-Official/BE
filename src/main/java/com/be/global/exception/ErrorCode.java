@@ -26,6 +26,7 @@ public enum ErrorCode {
     // Photo
     PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "존재하지 않는 사진입니다."),
     INVALID_PHOTO_COUNT(HttpStatus.BAD_REQUEST, "P002", "사진은 2장 이상 10장 이하로 업로드해야 합니다."),
+    NO_EXIF_GPS(HttpStatus.BAD_REQUEST, "P003", "위치정보가 없는 사진입니다."),
 
     // Participant
     PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "PA001", "존재하지 않는 참여자입니다."),

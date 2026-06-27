@@ -64,6 +64,10 @@ public class PhotoService {
             photos.add(photo);
         }
 
+        if (vote.getUseLocation() && photos.stream().anyMatch(p -> p.getLatitude() == null)) {
+            throw new CustomException(ErrorCode.NO_EXIF_GPS);
+        }
+
         Map<Photo, String> spotNameByPhoto = new HashMap<>();
         for (List<Photo> group : groupByHaversine(photos)) {
             Photo first = group.get(0);
