@@ -186,8 +186,8 @@ public class VoteService {
             );
 
             GeminiResponse response = restClient.post()
-                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}",
-                            geminiApiKey)
+                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
+                    .header("x-goog-api-key", geminiApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
