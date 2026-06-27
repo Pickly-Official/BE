@@ -17,11 +17,11 @@ public class ApiResponse<T> {
     private final T data;
 
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, "S200", "요청이 성공했습니다.", data);
+        return new ApiResponse<>(true, "200", "요청이 성공했습니다.", data);
     }
 
     public static <T> ApiResponse<T> ok() {
-        return new ApiResponse<>(true, "S200", "요청이 성공했습니다.", null);
+        return new ApiResponse<>(true, "200", "요청이 성공했습니다.", null);
     }
 
     public static ApiResponse<Void> fail(ErrorCode errorCode) {
