@@ -32,6 +32,8 @@ public enum ErrorCode {
     // Participant
     PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "PA001", "존재하지 않는 참여자입니다."),
     ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "PA002", "이미 참여한 투표입니다."),
+    PHOTO_NOT_IN_VOTE(HttpStatus.BAD_REQUEST, "PA003", "해당 투표의 사진이 아닙니다."),
+    INVALID_RESULT_COUNT(HttpStatus.BAD_REQUEST, "PA004", "결과 개수가 사진 수와 일치하지 않습니다."),
 
     // JWT
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "유효하지 않은 토큰입니다."),

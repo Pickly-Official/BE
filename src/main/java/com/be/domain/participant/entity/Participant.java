@@ -23,16 +23,23 @@ public class Participant extends BaseEntity {
     @JoinColumn(name = "vote_id", nullable = false)
     private Vote vote;
 
-    @Column(nullable = false, length = 64)
-    private String deviceToken;
+    @Column(name = "device_token", nullable = false, length = 64)
+    private String voterUuid;
+
+    @Column(name = "user_id")
+    private Long userId;
 
     private LocalDateTime completedAt;
 
-    public static Participant of(Vote vote, String deviceToken) {
+    public static Participant of(Vote vote, String voterUuid) {
         Participant p = new Participant();
         p.vote = vote;
-        p.deviceToken = deviceToken;
+        p.voterUuid = voterUuid;
         return p;
+    }
+
+    public void updateUserId(Long userId) {
+        this.userId = userId;
     }
 
     public void complete() {
