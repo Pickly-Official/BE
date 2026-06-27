@@ -3,6 +3,7 @@ package com.be.global.config;
 import com.be.global.security.filter.JwtAuthenticationFilter;
 import com.be.global.security.jwt.JwtTokenProvider;
 import com.be.global.security.oauth.CustomOAuth2UserService;
+import com.be.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.be.global.security.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -55,6 +57,8 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestRepository(cookieOAuth2AuthorizationRequestRepository))
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
                 )
