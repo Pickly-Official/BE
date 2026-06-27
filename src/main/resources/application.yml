@@ -14,8 +14,7 @@ spring:
         dialect: org.hibernate.dialect.MariaDBDialect
   sql:
     init:
-      mode: always
-      schema-locations: classpath:schema.sql
+      mode: never
   servlet:
     multipart:
       max-file-size: 20MB
