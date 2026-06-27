@@ -1,6 +1,7 @@
 package com.be.domain.photo.service;
 
 import com.be.domain.photo.dto.response.PhotoUploadResponse;
+import com.be.domain.photo.dto.response.PhotoLocationAnalysisResponse;
 import com.be.domain.vote.dto.response.VotePhotosResponse;
 import com.be.domain.photo.entity.Photo;
 import com.be.domain.photo.entity.PhotoSpot;
@@ -54,22 +55,49 @@ public class PhotoService {
     @Value("${aws.s3.region}")
     private String s3Region;
 
+    public PhotoLocationAnalysisResponse analyzeLocations(List<MultipartFile> files) {
+        validatePhotoFiles(files);
+
+        List<IndexedGpsData> gpsPhotos = new ArrayList<>();
+        List<Integer> missingGpsSequences = new ArrayList<>();
+
+        for (int i = 0; i < files.size(); i++) {
+            int sequence = i + 1;
+            GpsData gps = parseGpsFromExif(files.get(i));
+            if (gps == null) {
+                missingGpsSequences.add(sequence);
+                continue;
+            }
+            gpsPhotos.add(new IndexedGpsData(sequence, gps.latitude(), gps.longitude()));
+        }
+
+        List<PhotoLocationAnalysisResponse.LocationGroup> groups = new ArrayList<>();
+        for (List<IndexedGpsData> group : groupIndexedGpsByHaversine(gpsPhotos)) {
+            double centerLat = group.stream().mapToDouble(IndexedGpsData::latitude).average().orElse(group.get(0).latitude());
+            double centerLng = group.stream().mapToDouble(IndexedGpsData::longitude).average().orElse(group.get(0).longitude());
+
+            String spotName = getSpotNameFromKakao(centerLng, centerLat);
+            if (spotName == null || spotName.isBlank()) {
+                spotName = "위치 " + (groups.size() + 1);
+            }
+
+            groups.add(new PhotoLocationAnalysisResponse.LocationGroup(
+                    spotName,
+                    group.stream().map(IndexedGpsData::sequence).sorted().toList(),
+                    centerLat,
+                    centerLng
+            ));
+        }
+
+        return new PhotoLocationAnalysisResponse(groups, missingGpsSequences);
+    }
+
     @Transactional
     public PhotoUploadResponse uploadPhotos(Long voteId, List<MultipartFile> files) {
         Vote vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOTE_NOT_FOUND));
 
-        if (files.size() < 2 || files.size() > 10) {
-            throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
-        }
-
-        for (MultipartFile file : files) {
-            if (file.isEmpty()) throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
-            }
-        }
+        validatePhotoFiles(files);
 
         List<Photo> photos = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
@@ -115,6 +143,20 @@ public class PhotoService {
                 .toList();
 
         return new PhotoUploadResponse(photoInfos);
+    }
+
+    private void validatePhotoFiles(List<MultipartFile> files) {
+        if (files == null || files.size() < 2 || files.size() > 10) {
+            throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
+        }
+
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+            }
+        }
     }
 
     public VotePhotosResponse getVotePhotos(Long voteId) {
@@ -226,6 +268,27 @@ public class PhotoService {
         return groups;
     }
 
+    private List<List<IndexedGpsData>> groupIndexedGpsByHaversine(List<IndexedGpsData> gpsPhotos) {
+        List<List<IndexedGpsData>> groups = new ArrayList<>();
+        for (IndexedGpsData photo : gpsPhotos) {
+            boolean added = false;
+            for (List<IndexedGpsData> group : groups) {
+                IndexedGpsData rep = group.get(0);
+                if (haversineDistance(rep.latitude(), rep.longitude(), photo.latitude(), photo.longitude()) <= 50.0) {
+                    group.add(photo);
+                    added = true;
+                    break;
+                }
+            }
+            if (!added) {
+                List<IndexedGpsData> group = new ArrayList<>();
+                group.add(photo);
+                groups.add(group);
+            }
+        }
+        return groups;
+    }
+
     private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
         final double R = 6371000.0;
         double dLat = Math.toRadians(lat2 - lat1);
@@ -311,6 +374,8 @@ public class PhotoService {
     }
 
     private record GpsData(double latitude, double longitude, LocalDateTime takenAt) {}
+
+    private record IndexedGpsData(int sequence, double latitude, double longitude) {}
 
     private static class KakaoAddressResponse {
         public List<KakaoDocument> documents;
