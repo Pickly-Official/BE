@@ -3,12 +3,13 @@ package com.be.domain.vote.dto.response;
 import java.util.List;
 
 public record MyVoteListResponse(
-        List<VoteItem> votes
+        List<VoteInfo> inProgress,
+        List<VoteInfo> closed
 ) {
-    public record VoteItem(
+    public record VoteInfo(
             Long voteId,
             String title,
-            String dDay,
-            boolean closed
+            Integer participantCount,
+            String dDay
     ) {}
 }

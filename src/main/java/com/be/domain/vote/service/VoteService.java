@@ -12,6 +12,7 @@ import com.be.domain.photo.repository.PhotoRepository;
 import com.be.domain.user.entity.User;
 import com.be.domain.user.repository.UserRepository;
 import com.be.domain.vote.dto.request.VoteCreateRequest;
+import com.be.domain.vote.dto.response.MyVoteListResponse;
 import com.be.domain.vote.dto.response.VoteAnalyzeResponse;
 import com.be.domain.vote.dto.response.VoteCreateResponse;
 import com.be.domain.vote.dto.response.VoteResultResponse;
@@ -69,6 +70,36 @@ public class VoteService {
         Vote saved = voteRepository.save(vote);
 
         return new VoteCreateResponse(saved.getId(), saved.getTitle(), saved.getClosedAt());
+    }
+
+    public MyVoteListResponse getMyVotes(Long userId) {
+        if (userId == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        List<Vote> votes = voteRepository.findByUserId(userId);
+
+        List<MyVoteListResponse.VoteInfo> inProgress = votes.stream()
+                .filter(vote -> !vote.isClosed())
+                .sorted(Comparator.comparing(Vote::getClosedAt))
+                .map(vote -> new MyVoteListResponse.VoteInfo(
+                        vote.getId(),
+                        vote.getTitle(),
+                        (int) participantRepository.countByVoteId(vote.getId()),
+                        vote.getDDay()))
+                .toList();
+
+        List<MyVoteListResponse.VoteInfo> closed = votes.stream()
+                .filter(Vote::isClosed)
+                .sorted(Comparator.comparing(Vote::getClosedAt).reversed())
+                .map(vote -> new MyVoteListResponse.VoteInfo(
+                        vote.getId(),
+                        vote.getTitle(),
+                        (int) participantRepository.countByVoteId(vote.getId()),
+                        "종료"))
+                .toList();
+
+        return new MyVoteListResponse(inProgress, closed);
     }
 
     @Transactional
