@@ -51,6 +51,14 @@ public class PhotoService {
             throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
         }
 
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) throw new CustomException(ErrorCode.INVALID_PHOTO_COUNT);
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+            }
+        }
+
         List<Photo> photos = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
             int sequence = i + 1;
@@ -79,9 +87,8 @@ public class PhotoService {
 
             PhotoSpot spot = photoSpotService.findOrCreate(
                     spotName, BigDecimal.valueOf(centerLat), BigDecimal.valueOf(centerLng));
-            spot.increasePhotoCount();
-
             for (Photo p : group) {
+                spot.increasePhotoCount();
                 p.assignSpot(spot);
                 spotNameByPhoto.put(p, spotName);
             }
