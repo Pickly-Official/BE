@@ -1,5 +1,6 @@
 package com.be.domain.home.controller;
 
+import com.be.domain.home.dto.response.HomePopularSpotsResponse;
 import com.be.domain.home.dto.response.HomeStatsResponse;
 import com.be.domain.home.service.HomeService;
 import com.be.global.response.ApiResponse;
@@ -25,5 +26,11 @@ public class HomeController {
     @GetMapping("/stats")
     public ApiResponse<HomeStatsResponse> getStats() {
         return ApiResponse.ok(homeService.getStats());
+    }
+
+    @Operation(summary = "인기 포토스팟 조회", description = "전체 기간 swipe 추천율 기준 상위 3개 포토스팟을 반환합니다.")
+    @GetMapping("/spots/popular")
+    public ApiResponse<HomePopularSpotsResponse> getPopularSpots() {
+        return ApiResponse.ok(homeService.getPopularSpots());
     }
 }
