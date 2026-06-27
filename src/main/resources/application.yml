@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: Pickly
   datasource:
     url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pickly}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${DB_USERNAME:root}
@@ -33,13 +35,27 @@ aws:
     access-key: ${AWS_ACCESS_KEY_ID:}
     secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
-oauth:
-  kakao:
-    userinfo-url: https://kapi.kakao.com/v2/user/me
-  naver:
-    userinfo-url: https://openapi.naver.com/v1/nid/me
-  google:
-    userinfo-url: https://www.googleapis.com/oauth2/v3/userinfo
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: ${KAKAO_REDIRECT_URL}
+            client-name: Kakao
+            scope:
+              - profile_nickname
+              - profile_image
+              - account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 openai:
   api-key: ${OPENAI_API_KEY:}
