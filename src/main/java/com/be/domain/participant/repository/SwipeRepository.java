@@ -16,7 +16,7 @@ public interface SwipeRepository extends JpaRepository<Swipe, Long> {
             JOIN photos p ON s.photo_id = p.id
             JOIN photo_spots ps ON p.photo_spot_id = ps.id
             GROUP BY ps.id, ps.name
-            ORDER BY recommendRatio DESC
+            ORDER BY recommendRatio DESC, ps.id ASC
             LIMIT 3
             """, nativeQuery = true)
     List<PopularSpotProjection> findTop3PopularSpots();
