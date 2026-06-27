@@ -6,6 +6,7 @@ import com.be.domain.participant.entity.SwipeChoice;
 import com.be.domain.photo.repository.PopularSpotProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -13,6 +14,9 @@ public interface SwipeRepository extends JpaRepository<Swipe, Long> {
     void deleteAllByParticipant(Participant participant);
 
     long countByPhotoIdAndChoice(Long photoId, SwipeChoice choice);
+
+    @Query("SELECT COUNT(s) FROM Swipe s WHERE s.photo.vote.user.id = :userId")
+    long countReceivedSwipesByUserId(@Param("userId") Long userId);
 
    @Query(value = """
             SELECT ps.id AS spotId, ps.name AS name,
