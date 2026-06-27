@@ -22,6 +22,9 @@ public class PhotoAnalysis extends BaseEntity {
     @JoinColumn(name = "photo_id", nullable = false)
     private Photo photo;
 
+    @Column(length = 10)
+    private String type;
+
     @Column(columnDefinition = "TEXT")
     private String composition;
 
@@ -46,6 +49,25 @@ public class PhotoAnalysis extends BaseEntity {
         pa.lighting = lighting;
         pa.color = color;
         pa.background = background;
+        return pa;
+    }
+
+    public static PhotoAnalysis ofPerson(Photo photo, String composition, String expression, String lighting) {
+        PhotoAnalysis pa = new PhotoAnalysis();
+        pa.photo = photo;
+        pa.type = "person";
+        pa.composition = composition;
+        pa.expression = expression;
+        pa.lighting = lighting;
+        return pa;
+    }
+
+    public static PhotoAnalysis ofScene(Photo photo, String mood, String lighting) {
+        PhotoAnalysis pa = new PhotoAnalysis();
+        pa.photo = photo;
+        pa.type = "scene";
+        pa.composition = mood;
+        pa.lighting = lighting;
         return pa;
     }
 }
