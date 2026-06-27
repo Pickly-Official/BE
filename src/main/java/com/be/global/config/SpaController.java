@@ -8,8 +8,12 @@ public class SpaController {
 
     @GetMapping(value = {
             "/",
-            "/{path:^(?!api|oauth2|login|swagger-ui|api-docs|v3|assets|images|favicon\\.ico$).*$}",
-            "/**/{path:^(?!api|oauth2|login|swagger-ui|api-docs|v3|assets|images|favicon\\.ico$).*$}"
+            "/home",
+            "/create",
+            "/share/{id}",
+            "/vote/{id}",
+            "/result/{id}",
+            "/mypage"
     })
     public String forward() {
         return "forward:/index.html";
