@@ -6,4 +6,5 @@ import java.time.LocalDateTime;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    long countByUserId(Long userId);
 }
