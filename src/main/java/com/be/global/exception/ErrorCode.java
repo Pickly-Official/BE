@@ -35,7 +35,10 @@ public enum ErrorCode {
 
     // JWT
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "유효하지 않은 토큰입니다."),
-    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "J002", "만료된 토큰입니다.");
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "J002", "만료된 토큰입니다."),
+
+    // OAuth
+    OAUTH_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "O001", "소셜 로그인 인증에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

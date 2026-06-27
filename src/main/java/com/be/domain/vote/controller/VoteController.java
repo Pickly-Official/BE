@@ -3,6 +3,7 @@ package com.be.domain.vote.controller;
 import com.be.domain.photo.dto.response.PhotoUploadResponse;
 import com.be.domain.photo.service.PhotoService;
 import com.be.domain.vote.dto.request.VoteCreateRequest;
+import com.be.domain.vote.dto.response.VoteAnalyzeResponse;
 import com.be.domain.vote.dto.response.VoteCreateResponse;
 import com.be.domain.vote.dto.response.VoteResultResponse;
 import com.be.domain.vote.service.VoteService;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,8 +28,9 @@ public class VoteController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<VoteCreateResponse>> createVote(
+            @AuthenticationPrincipal Long userId,
             @RequestBody @Valid VoteCreateRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(voteService.createVote(request)));
+        return ResponseEntity.ok(ApiResponse.ok(voteService.createVote(userId, request)));
     }
 
     @PostMapping(value = "/{voteId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -41,5 +44,10 @@ public class VoteController {
     @GetMapping("/{voteId}/result")
     public ResponseEntity<ApiResponse<VoteResultResponse>> getVoteResult(@PathVariable Long voteId) {
         return ResponseEntity.ok(ApiResponse.ok(voteService.getVoteResult(voteId)));
+    }
+
+    @GetMapping("/{voteId}/analyze")
+    public ResponseEntity<ApiResponse<VoteAnalyzeResponse>> analyzeVote(@PathVariable Long voteId) {
+        return ResponseEntity.ok(ApiResponse.ok(voteService.analyzeVote(voteId)));
     }
 }

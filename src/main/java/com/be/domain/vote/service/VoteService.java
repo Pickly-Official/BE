@@ -1,7 +1,9 @@
 package com.be.domain.vote.service;
 
 import com.be.domain.analysis.entity.PhotoAnalysis;
+import com.be.domain.analysis.entity.VoteAnalysis;
 import com.be.domain.analysis.repository.PhotoAnalysisRepository;
+import com.be.domain.analysis.repository.VoteAnalysisRepository;
 import com.be.domain.participant.entity.SwipeChoice;
 import com.be.domain.participant.repository.ParticipantRepository;
 import com.be.domain.participant.repository.SwipeRepository;
@@ -10,6 +12,7 @@ import com.be.domain.photo.repository.PhotoRepository;
 import com.be.domain.user.entity.User;
 import com.be.domain.user.repository.UserRepository;
 import com.be.domain.vote.dto.request.VoteCreateRequest;
+import com.be.domain.vote.dto.response.VoteAnalyzeResponse;
 import com.be.domain.vote.dto.response.VoteCreateResponse;
 import com.be.domain.vote.dto.response.VoteResultResponse;
 import com.be.domain.vote.entity.Vote;
@@ -42,6 +45,7 @@ public class VoteService {
     private final ParticipantRepository participantRepository;
     private final SwipeRepository swipeRepository;
     private final PhotoAnalysisRepository photoAnalysisRepository;
+    private final VoteAnalysisRepository voteAnalysisRepository;
 
     private final RestClient restClient = RestClient.builder()
             .requestFactory(new JdkClientHttpRequestFactory(
@@ -54,9 +58,11 @@ public class VoteService {
     private String geminiApiKey;
 
     @Transactional
-    public VoteCreateResponse createVote(VoteCreateRequest request) {
-        // TODO: JWT 연동 후 SecurityContext에서 userId 추출로 교체
-        User user = userRepository.findById(1L)
+    public VoteCreateResponse createVote(Long userId, VoteCreateRequest request) {
+        if (userId == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Vote vote = Vote.of(user, request.title(), request.useLocation(), request.deadlineType());
@@ -107,6 +113,63 @@ public class VoteService {
                 .orElse(null);
 
         return new VoteResultResponse(voteId, vote.getTitle(), spotName, participantCount, photoRankInfos);
+    }
+
+    @Transactional
+    public VoteAnalyzeResponse analyzeVote(Long voteId) {
+        Vote vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new CustomException(ErrorCode.VOTE_NOT_FOUND));
+
+        // 이미 분석된 결과 있으면 그대로 반환
+        Optional<VoteAnalysis> existing = voteAnalysisRepository.findByVoteId(voteId);
+        if (existing.isPresent()) {
+            VoteAnalysis va = existing.get();
+            List<String> keywords = va.getKeywords().stream()
+                    .map(k -> k.getKeyword())
+                    .toList();
+            return new VoteAnalyzeResponse(va.getSummary(), keywords, va.getModelName());
+        }
+
+        // 1등 사진 선정 (recommendRate 최고)
+        Photo topPhoto = photoRepository.findByVoteId(voteId).stream()
+                .max(Comparator.comparingInt(p ->
+                        (int) swipeRepository.countByPhotoIdAndChoice(p.getId(), SwipeChoice.LIKE)))
+                .orElse(null);
+
+        VoteAnalysis voteAnalysis = VoteAnalysis.of(vote);
+
+        try {
+            if (topPhoto == null) throw new IllegalStateException("사진 없음");
+
+            byte[] imageBytes = fetchImageBytes(topPhoto.getImageUrl());
+            if (imageBytes == null) throw new IllegalStateException("이미지 fetch 실패");
+
+            String base64 = Base64.getEncoder().encodeToString(imageBytes);
+            String responseText = callGemini(base64, buildVotePrompt());
+            if (responseText == null) throw new IllegalStateException("Gemini 응답 없음");
+
+            String json = responseText.trim()
+                    .replaceAll("(?s)^```json\\s*", "")
+                    .replaceAll("(?s)\\s*```$", "")
+                    .trim();
+            JsonObject parsed = JsonParser.parseString(json).getAsJsonObject();
+
+            String summary = parsed.get("summary").getAsString();
+            List<String> keywords = new ArrayList<>();
+            if (parsed.has("keywords") && parsed.get("keywords").isJsonArray()) {
+                parsed.get("keywords").getAsJsonArray()
+                        .forEach(el -> keywords.add(el.getAsString()));
+            }
+
+            voteAnalysis.complete(summary);
+            keywords.forEach(voteAnalysis::addKeyword);
+            voteAnalysisRepository.save(voteAnalysis);
+
+            return new VoteAnalyzeResponse(summary, keywords, voteAnalysis.getModelName());
+        } catch (Exception e) {
+            log.warn("[Gemini] 투표 분석 실패: voteId={}, {}", voteId, e.getMessage());
+            return new VoteAnalyzeResponse("분석 중입니다.", List.of(), voteAnalysis.getModelName());
+        }
     }
 
     private VoteResultResponse.PhotoAnalysisInfo getOrCreateAnalysis(Photo photo, int recommendRate) {
@@ -219,6 +282,17 @@ public class VoteService {
 
                 각 항목은 20자 이내로 짧고 간결하게.
                 """.formatted(recommendRate);
+    }
+
+    private String buildVotePrompt() {
+        return """
+                이 사진은 친구들의 스와이프 투표에서 1위를 차지한 사진입니다.
+                전체 투표 결과를 바탕으로 친구들의 반응을 2~3문장으로 요약하고,
+                이 사진과 어울리는 공간/분위기 키워드를 3~5개 추출해주세요.
+
+                JSON 형식으로만 응답하세요:
+                {"summary": "요약문", "keywords": ["#감성", "#데이트", "#자연광"]}
+                """;
     }
 
     private VoteResultResponse.PhotoAnalysisInfo toAnalysisInfo(PhotoAnalysis analysis) {
