@@ -1,32 +1,37 @@
 package com.be.global.security.oauth;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.util.SerializationUtils;
+import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
-import java.util.Base64;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class CookieOAuth2AuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
-    private static final String COOKIE_NAME = "PICKLY_OAUTH2_AUTH_REQUEST";
-    private static final int COOKIE_MAX_AGE_SECONDS = 180;
+    private static final long TTL_SECONDS = 180;
+    private static final Map<String, SavedAuthorizationRequest> REQUESTS = new ConcurrentHashMap<>();
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-        return Arrays.stream(request.getCookies() == null ? new Cookie[0] : request.getCookies())
-                .filter(cookie -> COOKIE_NAME.equals(cookie.getName()))
-                .findFirst()
-                .map(cookie -> deserialize(cookie.getValue()))
-                .orElse(null);
+        cleanupExpiredRequests();
+        String state = request.getParameter("state");
+        if (!StringUtils.hasText(state)) {
+            return null;
+        }
+
+        SavedAuthorizationRequest saved = REQUESTS.get(state);
+        if (saved == null || saved.isExpired()) {
+            REQUESTS.remove(state);
+            return null;
+        }
+        return saved.authorizationRequest();
     }
 
     @Override
@@ -34,44 +39,38 @@ public class CookieOAuth2AuthorizationRequestRepository
                                          HttpServletRequest request,
                                          HttpServletResponse response) {
         if (authorizationRequest == null) {
-            expireCookie(response);
             return;
         }
 
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, serialize(authorizationRequest))
-                .path("/")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .maxAge(COOKIE_MAX_AGE_SECONDS)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        cleanupExpiredRequests();
+        REQUESTS.put(
+                authorizationRequest.getState(),
+                new SavedAuthorizationRequest(authorizationRequest, Instant.now().plusSeconds(TTL_SECONDS))
+        );
     }
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
                                                                 HttpServletResponse response) {
-        OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
-        expireCookie(response);
-        return authorizationRequest;
+        String state = request.getParameter("state");
+        if (!StringUtils.hasText(state)) {
+            return null;
+        }
+        SavedAuthorizationRequest saved = REQUESTS.remove(state);
+        return saved == null || saved.isExpired() ? null : saved.authorizationRequest();
     }
 
-    private void expireCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, "")
-                .path("/")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .maxAge(0)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    private void cleanupExpiredRequests() {
+        REQUESTS.entrySet().removeIf(entry -> entry.getValue().isExpired());
     }
 
-    private String serialize(OAuth2AuthorizationRequest authorizationRequest) {
-        return Base64.getUrlEncoder().encodeToString(SerializationUtils.serialize(authorizationRequest));
-    }
+    private record SavedAuthorizationRequest(
+            OAuth2AuthorizationRequest authorizationRequest,
+            Instant expiresAt
+    ) {
 
-    private OAuth2AuthorizationRequest deserialize(String value) {
-        return (OAuth2AuthorizationRequest) SerializationUtils.deserialize(Base64.getUrlDecoder().decode(value));
+        private boolean isExpired() {
+            return Instant.now().isAfter(expiresAt);
+        }
     }
 }
