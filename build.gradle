@@ -53,6 +53,9 @@ dependencies {
     // EXIF metadata
     implementation 'com.drewnoakes:metadata-extractor:2.19.0'
 
+    // Gson (Gemini 응답 파싱)
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     // ANTLR4 (Hibernate 의존성 - IntelliJ classpath 누락 방지)
     implementation 'org.antlr:antlr4-runtime:4.13.0'
 
