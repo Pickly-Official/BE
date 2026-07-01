@@ -2,7 +2,7 @@
 <img width="1280" height="832" alt="1" src="https://github.com/user-attachments/assets/e0f9ec0b-b492-4f28-becb-366a89a6b276" />
 
 # 🌍 프로젝트 소개
-### "친구들의 반응으로 베스트컷을 찾아보세요."
+### 🤖 "친구들의 반응으로 베스트컷을 찾아보세요."
 
 > 사진을 업로드하고 링크를 공유하면,
 친구들의 스와이프 결과와 AI 분석을 기반으로
